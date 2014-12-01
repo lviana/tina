@@ -1,0 +1,292 @@
+#!/usr/bin/python
+
+#from tina import baker
+#from tina import requests
+
+import baker
+import requests
+import os
+import sys
+import yaml
+
+import shlex
+import readline
+
+
+service_url = 'http://127.0.0.1:7890'
+session_file = '/var/lib/tina/session.yaml'
+
+# ------------------------------ New methods and variables
+
+session_dir = '/var/lib/tina/sessions'
+
+# Session related functions
+
+def _session_create(name, machine):
+    """ Create machine session
+    """
+    session = '%s/%s.yaml' % (session_dir, name)
+    try:
+        open(session, 'w').write(yaml.dump(machine))
+    except IOError, e:
+        print('Could not create session file: %s' % e)
+        return False
+
+def _session_read(name):
+    """ Validate machine session
+    """
+    session = '%s/%s.yaml' % (session_dir, name)
+    try:
+        machine = yaml.load(open(session, 'r').read())
+        return machine
+    except IOError:
+        print('Could not read session data, try creating session first')
+        return False
+
+def _session_write(name, machine):
+    """ Write new data on session
+    """
+    session = '%s/%s.yaml' % (session_dir, name)
+    try:
+        open(session, 'w').write(yaml.dump(machine))
+    except IOError:
+        print('Could not write session file')
+        return False
+
+def _session_rollback(name):
+    """ Remove machine session
+    """
+    session = '%s/%s.yaml' % (session_dir, name)
+    try:
+        os.remove(session)
+    except OSError:
+        print('Machine session not found, skipping')
+
+# Machine related funcions
+
+def create_machine(name, vcpu, memory, pool):
+    """ Create a new virtual machine on buffer
+    """
+    machine = {'name': name,
+               'vcpu': vcpu,
+               'memory': memory,
+               'disks': [],
+               'interfaces': [],
+               'pool': pool
+               }
+
+    if _session_create(name, machine):
+        print('Machine session created: %s' % name)
+
+# Disk related functions
+
+def add_disk(machine_name, device, dataset):
+    machine = _session_read(machine_name)
+
+    for item in machine['disks']:
+        if device in item.values():
+            print('Device already exists on machine: %s' % device)
+            return False
+
+    machine['disks'].append(
+        {'name': machine['name'] + '-' + str(1 + len(machine['disks'])) + '.qcow2',
+         'device': device,
+         'dataset': dataset
+         }
+    )
+
+    if _session_write(machine_name, machine):
+        print('Disk %s added to %s session' % (device, machine_name))
+
+# Network interface related functions
+
+def add_interface(machine_name, vlan):
+    machine = 
+
+
+# --------------------------------- Legacy code and algorithm
+
+
+
+def _validate_operation(value, arguments):
+    if value not in arguments.values():
+        print('Invalid operation. Available options: %s.' % arguments.keys())
+        sys.exit(1)
+    return value
+
+def _validate_component(value, arguments):
+    if value not in arguments.values():
+        print('Invalid component. Available options: %s.' % arguments.keys())
+        sys.exit(1)
+    return value
+
+def _validate_attributes(attributes):
+    if None in attributes.values():
+        baker.usage('vm')
+        sys.exit(1)
+
+@baker.command
+def shell():
+    """ Real time management console
+    """
+    try:
+        while True:
+            argv = shlex.split(raw_input("> "))
+            print(argv)
+    except EOFError:
+        pass
+
+@baker.command
+def vm(operation, name, vcpu=None, memory=None, pool=None):
+    """ Manage virtual machines on tinad
+    """
+    attributes = {'vcpu': vcpu, 'memory': memory, 'pool': pool}
+
+    def add():
+        """ Create a new virtual machine
+        """
+        _validate_attributes(attributes)
+        machine = {'name': name,
+                   'vcpu': attributes.get('vcpu'),
+                   'memory': attributes.get('memory'),
+                   'disks': [],
+                   'interfaces': [],
+                   'pool': pool
+        }
+        open(session_file, 'w').write(yaml.dump(machine))
+        print('Virtual machine added')
+
+    def remove():
+        """ Remove a virtual machine
+        """
+        print('Virtual machine removed')
+
+    def edit():
+        """ Open virtual machine in buffer
+        """
+        print('Opened virtual machine in buffer')
+
+    operations = {'add': add,
+                  'edit': edit,
+                  'remove': remove
+    }
+
+    _validate_operation(operations.get(operation), operations)()
+
+
+@baker.command
+def resource(component, operation, device=None, dataset=None, vlan=None):
+    """ Manage virtual machine resources
+    """
+    ###_validate_session()
+
+    def disk():
+        """ Maninpulate disks on machine in buffer
+        """
+        def add():
+            machine = yaml.load(open(session_file, 'r').read())
+
+            for item in machine['disks']:
+                if device in item.values():
+                    print('Device already exists on machine: %s' % device)
+                    sys.exit(1)
+
+            machine['disks'].append({'name': machine['name'] + '-' + str(1 + len(machine['disks'])) + '.qcow2',
+                                     'device': device,
+                                     'dataset': dataset,
+                                     }
+                                    )
+            open(session_file, 'w').write(yaml.dump(machine))     
+            print('Disk added')
+        
+        def remove():
+            print('Disk removed')
+            pass
+
+        operations = {'add': add,
+                      'remove': remove
+        }
+
+        _validate_operation(operations.get(operation), operations)()
+
+    def net():
+        """ Manipulate network interfaces on machine in buffer
+        """
+        def add():
+            machine = yaml.load(open(session_file, 'r').read())
+            machine['interfaces'].append({'vlan': vlan})
+
+            open(session_file, 'w').write(yaml.dump(machine))
+            print('Network interface added')
+
+        def remove():
+            print('Network interface removed')
+
+        operations = {'add': add,
+                      'remove': remove
+        }
+        
+        _validate_operation(operations.get(operation), operations)()
+
+    components = {'disk': disk, 'net': net}
+    _validate_component(components.get(component), components)()
+
+
+@baker.command
+def pool(operation, name, address, cores=None, memory=None):
+    """ Manage pools on tinad
+    """
+    def add():
+        newpoll = {'name': name,
+                   'address': address,
+                   'cores': cores,
+                   'memory': memory
+                   }
+
+        
+
+
+@baker.command
+def list(component, status='all'):
+    """ List active components
+    """
+    pass
+
+
+@baker.command
+def session(action):
+    """ Session management functions
+    """
+    actions = ['commit', 'rollback', 'buffer']
+    if action not in actions:
+        print('Available actions: %s' % actions)
+        sys.exit(1)
+    
+
+
+# Session manipulation functions
+
+def _validate_session():
+    """ Disks and interfaces work only with opened sessions
+    """
+    if os.path.isfile(session_file):
+        return True
+    else:
+        print('No sessions found. Open virtual machine first.')
+        sys.exit(1)
+
+def _create_session():
+    if not os.path.isfile(session_file):
+        try:
+            open(session_file, 'w').close()
+            return True
+        except IOError:
+            print('[Error] Could not create session file: %s' % session_file)
+            sys.exit(2)
+    else:
+        print('Previous session found. Complete it or rollback changes to proceed.')
+        sys.exit(1)
+
+
+baker.run()
+

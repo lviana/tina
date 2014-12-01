@@ -1,0 +1,14 @@
+Source: tina
+Section: python
+Priority: extra
+Maintainer: Luiz Viana <lviana@include.io>
+Build-Depends: debhelper (>= 7.0.50~), python-support (>= 0.90), python, python-setuptools
+Standards-Version: 3.9.4
+Homepage: http://git.locaweb.com.br/iaas/tina
+
+Package: tina
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, python, python-supay, python-libxml2, python-bottle, python-pastescript, python-support, python-requests, virtinst
+Description: Virtual machine orchestrator
+ Automated virtual machine and physical resource management based on kvm
+ and openvswitch native Linux implementation.

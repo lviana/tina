@@ -1,0 +1,73 @@
+.\" Manpage for tina.
+.\" Contact luiz.viana@locaweb.com.br to correct errors or typos.
+.TH man 8 "19 Aug 2014" "1.0" "tina man page"
+.SH NAME
+tina \- tina orchestrator command line interface
+.SH SYNOPSIS
+tina [command] [options]
+.SH DESCRIPTION
+tina is the command line interface to interact with tina cloud orchestrator. Using this tool you can create, remove, list and manage resources orchestrated by tina server. It can also manipulate production virtual machines that are running on managed pools.
+
+All of the commands and option have runtime documentation that can be called with tina [command] --help.
+.SH OPTIONS
+
+General options:
+
+ \fB--help\fR \- Display the help message for commands and exit.
+
+Resource related options:
+
+ \fBvm\fR   \- Manage virtual machine resources.
+ \fBpool\fR \- Manage pool resources.
+ \fBlist\fR \- List any kind of created resources.
+
+Buffer related attributes:
+
+ \fBnet\fR  \- Manage network attributes inside virtual machine buffer.
+ \fBdisk\fR \- Manage disk attributes inside virtual machine buffer.
+
+.SH EXAMPLES
+Creating a virtual server:
+
+ # tina vm add pleskl0001 12 16 cletus0001
+ # tina disk add pleskl0001-a.qcow2 vda hmfs-0001
+ # tina net add 375
+ # tina commit
+
+Deleting a virtual server:
+
+# tina vm remove pleskl0001
+
+Power on a virtual server:
+
+# tina vm on pleskl0001
+
+Power off a virtual server:
+
+# tina vm off pleskl0001
+
+Get information about virtual server:
+
+# tina vm info pleskl0001
+
+Listing all virtual servers:
+
+# tina list vm
+
+Create a new pool:
+
+# tina pool create cletus0001 192.168.0.2 16 98
+
+Remove a pool:
+
+# tina pool remove cletus0001
+
+List available pools:
+
+# tina list pool
+.SH SEE ALSO
+tinad(8)
+.SH BUGS
+No known bugs.
+.SH AUTHOR
+Luiz Viana (luiz.viana@locaweb.com.br)

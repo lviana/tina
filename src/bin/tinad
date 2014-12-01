@@ -1,0 +1,118 @@
+#!/usr/bin/python
+
+import bottle
+
+from bottle import get, post, delete
+from bottle import abort, request
+from bottle import run, debug
+
+from sqlalchemy.orm import exc
+from tina.catalog import Catalog
+from tina.manager import Manager
+
+
+
+@get('/machine/:name')
+def get_machine(name):
+    """ Deliver machine status and information
+    """
+    vmgr = Catalog()
+    try:
+        info = vmgr.get_machine_info(name)
+    except exc.NoResultFound:
+        abort(404, 'Machine not found')
+    finally:
+        del(vmgr)
+    
+    host = Manager(info[''])
+    status = host.domain_status(name)
+
+    output = {'info': info, 'status': status}
+    return output
+
+
+@post('/machine/:name')
+def create_machine(name):
+    """ Create new virtual machine in catalog
+    """
+    # Need dynamic validation on mac address, device, pciid!
+    # Model: {'name': 'cletus0004','vcpu': 24, 'memory': 96,
+    # 'disks': [{'name': 'cletus0004.qcow2', 'device': 'vda', 'dataset': 'hmfs-example'},
+    # 'interfaces': [{'mac': '00:00:00:00:00:00', 'vlan': 123}]}
+    machine = request.json
+    pool = machine.get('pool')
+    vmachine = Catalog()
+    try:
+        vmachine.create_machine(machine, pool)
+    except KeyError:
+        abort(400, 'Malformed or incomplete json object')
+    finally:
+        del(vmachine)
+
+    return 'Machine created'
+
+
+@delete('/machine/:name')
+def remove_machine(name):
+    """ Remove machine from catalog
+    """
+    vmgr = Catalog()
+    try:
+        output = vmgr.remove_machine(name)
+    except exc.NoResultFound:
+        abort(404, 'Machine not found')
+    finally:
+        del(vmgr)
+
+    return 'Machine removed'
+
+
+@get('/pool/:name')
+def get_pool(name):
+    vpool = Catalog()
+    try:
+        output = vpool.get_pool_info(name)
+    except exc.NoResultFound:
+        abort(404, 'Pool not found')
+    finally:
+        del(vpool)
+
+    return output
+
+
+@post('/pool/:name')
+def create_pool(name):
+    entity = request.json
+
+    try:
+        name = str(entity['name'])
+        address = str(entity['address'])
+        memory = str(entity['memory'])
+        cores = str(entity['cores'])
+
+    except KeyError:
+        abort(400, 'Malformed or incomplete json object')
+
+    vpool = Catalog()
+    vpool.create_pool(name, address, memory, cores)
+    del(vpool)
+
+    return 'Pool created'
+
+
+@delete('/pool/:name')
+def remove_pool(name):
+    vpool = Catalog()
+    try:
+        output = vpool.remove_pool(name)
+    except exc.NoResultFound:
+        about(404, 'Pool not found')
+    finally:
+        del(vpool)
+
+    return 'Pool removed'
+
+
+debug(True)
+run(reloader=True)
+
